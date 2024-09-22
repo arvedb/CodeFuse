@@ -1,20 +1,35 @@
 import os
 
+from templates.templates import DefaultTemplate
+
 
 class CodeFuse:
-    def __init__(self, path, included_files=None):
+    def __init__(self, path, template: DefaultTemplate = DefaultTemplate):
         self.path = path
-        self.included_files = included_files if included_files is not None else []
-
+        self.template = template
+    
     @property
-    def file_list(self):
+    def all_files(self) -> list[str]:
         return os.listdir(self.path)
 
     @property
-    def file_list_filtered(self):
-        return [file for file in self.file_list if file.endswith('.py')]
+    def included_files(self) -> list[str]:
+        filtered_files = [
+            file
+            for file in self.all_files
+            if os.path.splitext(file)[1] in self.template.included_files
+        ]
+        return filtered_files
 
-    def _get_file_content(self):
-        with open(self.file_path, 'r', encoding='utf-8') as file:
+    @property
+    def excluded_files(self) -> list[str]:
+        filtered_files = [
+            file
+            for file in self.all_files
+            if os.path.splitext(file)[1] not in self.template.included_files
+        ]
+        return filtered_files
+
+    def _get_file_content(self, file_path: str) -> str:
+        with open(file_path, "r", encoding="utf-8") as file:
             return file.read()
-

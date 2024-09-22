@@ -37,6 +37,10 @@ class CodeFuse:
     @property
     def output(self) -> str:
         return self._combine_files(self.included_files)
+    
+    def write_output(self, path: str):
+        with open(path, "w", encoding="utf-8") as outfile:
+            outfile.write(self.output)
 
 def main():
     codefuse = CodeFuse(".")

@@ -1,35 +1,46 @@
 import os
 
-from templates.templates import DefaultTemplate
-
+from templates import default_template, Template
+from files import File
 
 class CodeFuse:
-    def __init__(self, path, template: DefaultTemplate = DefaultTemplate):
+    def __init__(self, path: str, template: Template = default_template):
         self.path = path
         self.template = template
     
     @property
-    def all_files(self) -> list[str]:
-        return os.listdir(self.path)
+    def all_files(self) -> list[File]:
+        return [File(os.path.join(self.path, filename)) for filename in os.listdir(self.path)]
 
     @property
-    def included_files(self) -> list[str]:
-        filtered_files = [
+    def included_files(self) -> list[File]:
+        return [
             file
             for file in self.all_files
-            if os.path.splitext(file)[1] in self.template.included_files
+            if self.template.does_include(file.extension)
         ]
-        return filtered_files
 
     @property
-    def excluded_files(self) -> list[str]:
-        filtered_files = [
+    def excluded_files(self) -> list[File]:
+        return [
             file
             for file in self.all_files
-            if os.path.splitext(file)[1] not in self.template.included_files
+            if not self.template.does_include(file.extension)
         ]
-        return filtered_files
+    
+    def _combine_files(self, files: list[File]) -> str:
+        combined_content = []
+        for file in files:
+            combined_content.append(f"{file.path}\n\n{file.content}")
+        return "-" * 80 + "\n\n" + "\n\n".join(combined_content) + "\n\n" + "-" * 80
+    
+    @property
+    def output(self) -> str:
+        return self._combine_files(self.included_files)
 
-    def _get_file_content(self, file_path: str) -> str:
-        with open(file_path, "r", encoding="utf-8") as file:
-            return file.read()
+def main():
+    codefuse = CodeFuse(".")
+    print(codefuse.output)
+
+if __name__ == "__main__":
+    main()

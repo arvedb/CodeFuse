@@ -37,14 +37,21 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-o",
         "--output",
-        action="store",
-        default="output.txt",
+        nargs="?",
+        const="output.txt",
+        default=None,
         type=str,
-        help="Path to the output file.",
+        help="Path to the output file. If specified without a value, uses 'output.txt'.",
+    )
+    parser.add_argument(
+        "-c",
+        "--clipboard",
+        action="store_true",
+        help="Copy the output to clipboard.",
     )
     return parser
 
-
+    
 def main():
     parser = setup_parser()
     args = parser.parse_args()
@@ -57,10 +64,15 @@ def main():
         template = default_template
 
     codefuse = CodeFuse(folder=args.folder, template=template)
-
-    codefuse.write_output(path=args.output)
-
-    print(f"Combined code has been written to {args.output}")
+    
+    if args.clipboard:
+        import pyperclip
+        pyperclip.copy(codefuse.output)
+        print("Combined code has been copied to the clipboard.")
+        
+    if args.output:
+        codefuse.write_output(path=args.output)
+        print(f"Combined code has been written to {args.output}")
 
 
 if __name__ == "__main__":

@@ -8,10 +8,7 @@ class CodeFuse:
     def __init__(self, folder: str, template: Template = default_template):
         self.folder = folder
         self.template = template
-        self.all_files = [
-            File(os.path.join(self.folder, filename))
-            for filename in os.listdir(self.folder)
-        ]
+        self.all_files = self._get_all_files()
         self.included_files = [
             file
             for file in self.all_files
@@ -22,6 +19,13 @@ class CodeFuse:
             for file in self.all_files
             if not self.template.does_include(file.extension)
         ]
+        
+    def _get_all_files(self) -> list[File]:
+        all_files = []
+        for root, _, files in os.walk(self.folder):
+            for filename in files:
+                all_files.append(File(os.path.join(root, filename)))
+        return all_files
 
     def _combine_files(self, files: list[File]) -> str:
         combined_content = []

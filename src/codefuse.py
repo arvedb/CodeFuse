@@ -28,9 +28,14 @@ class CodeFuse:
         return all_files
 
     def _combine_files(self, files: list[File]) -> str:
+        if not files:
+            return ""
         combined_content = []
         for file in files:
-            combined_content.append("-" * 80 + f"\n\n{file.path}\n\n{file.content}")
+            try:
+                combined_content.append("-" * 80 + f"\n\n{file.path}\n\n{file.content}")
+            except Exception as e:
+                raise Exception(f"Error combining file {file.path}: {e}")
         return "\n\n".join(combined_content)
 
     @property
@@ -39,11 +44,14 @@ class CodeFuse:
 
     def write_output(self, path: str):
         output_file = File(path)
-        with open(path, "w", encoding="utf-8") as outfile:
-            self.all_files = [
-                file for file in self.all_files if file.name is not output_file.name
-            ]
-            outfile.write(self.output)
+        self.all_files = [
+            file for file in self.all_files if file.name is not output_file.name
+        ]
+        try:
+            with open(path, "w", encoding="utf-8") as outfile:
+                outfile.write(self.output)
+        except Exception as e:
+            print(f"Error writing to {path}: {e}")
 
 
 def main():

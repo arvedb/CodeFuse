@@ -25,13 +25,15 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-i",
         "--include",
-        action="store_true",
+        nargs="+",
+        default=[],
         help="List of file extensions to be included (e.g., .py .md .txt). Alternative to using template.",
     )
     parser.add_argument(
         "-e",
         "--exclude",
-        action="store_true",
+        nargs="+",
+        default=[],
         help="List of file extensions to be excluded (e.g., .py .md .txt). Alternative to using template.",
     )
     parser.add_argument(

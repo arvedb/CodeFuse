@@ -1,0 +1,198 @@
+--------------------------------------------------------------------------------
+
+.\cli.py
+
+import argparse
+from codefuse import CodeFuse
+from templates import Template, default_template
+
+
+def setup_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="CodeFuse command line interface for merging code files into a single file."
+    )
+    parser.add_argument(
+        "folder",
+        action="store",
+        default=".",
+        type=str,
+        help="Path to the directory to be processed",
+    )
+    parser.add_argument(
+        "-t",
+        "--template",
+        action="store",
+        default=default_template,
+        type=Template,
+        help="Template that determines which files to include or exclude",
+    )
+    parser.add_argument(
+        "-i",
+        "--include",
+        action="store_true",
+        help="List of file extensions to be included (e.g., .py .md .txt). Alternative to using template.",
+    )
+    parser.add_argument(
+        "-e",
+        "--exclude",
+        action="store_true",
+        help="List of file extensions to be excluded (e.g., .py .md .txt). Alternative to using template.",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        action="store",
+        default="output.txt",
+        type=str,
+        help="Path to the output file.",
+    )
+    return parser
+
+
+def main():
+    parser = setup_parser()
+    args = parser.parse_args()
+
+    if args.include:
+        template = Template(include_extensions=args.include)
+    elif args.exclude:
+        template = Template(exclude_extensions=args.exclude)
+    else:
+        template = default_template
+
+    codefuse = CodeFuse(folder=args.folder, template=template)
+
+    codefuse.write_output(path=args.output)
+
+    print(f"Combined code has been written to {args.output}")
+
+
+if __name__ == "__main__":
+    main()
+
+
+--------------------------------------------------------------------------------
+
+.\codefuse.py
+
+import os
+
+from templates import default_template, Template
+from files import File
+
+
+class CodeFuse:
+    def __init__(self, folder: str, template: Template = default_template):
+        self.folder = folder
+        self.template = template
+        self.all_files = [
+            File(os.path.join(self.folder, filename))
+            for filename in os.listdir(self.folder)
+        ]
+        self.included_files = [
+            file
+            for file in self.all_files
+            if self.template.does_include(file.extension)
+        ]
+        self.excluded_files = [
+            file
+            for file in self.all_files
+            if not self.template.does_include(file.extension)
+        ]
+
+    def _combine_files(self, files: list[File]) -> str:
+        combined_content = []
+        for file in files:
+            combined_content.append("-" * 80 + f"\n\n{file.path}\n\n{file.content}")
+        return "\n\n".join(combined_content)
+
+    @property
+    def output(self) -> str:
+        return self._combine_files(self.included_files)
+
+    def write_output(self, path: str):
+        output_file = File(path)
+        with open(path, "w", encoding="utf-8") as outfile:
+            self.all_files = [
+                file for file in self.all_files if file.name is not output_file.name
+            ]
+            outfile.write(self.output)
+
+
+def main():
+    codefuse = CodeFuse(".")
+    print(codefuse.output)
+
+
+if __name__ == "__main__":
+    main()
+
+
+--------------------------------------------------------------------------------
+
+.\files.py
+
+import os
+from dataclasses import dataclass
+
+
+@dataclass
+class File:
+    path: str
+    
+    @property
+    def extension(self) -> str:
+        return os.path.splitext(self.path)[1]
+    
+    @property
+    def name(self) -> str:
+        return os.path.basename(self.path)
+
+    @property
+    def content(self) -> str:
+        with open(self.path, "r", encoding="utf-8") as file:
+            return file.read()
+
+
+--------------------------------------------------------------------------------
+
+.\templates.py
+
+from dataclasses import dataclass
+from typing import Optional, List
+
+
+@dataclass
+class Template:
+    include_extensions: Optional[List[str]] = None
+    exclude_extensions: Optional[List[str]] = None
+    _type: str = "include"
+
+    def __post_init__(self):
+        if self.include_extensions is not None and self.exclude_extensions is not None:
+            raise ValueError(
+                "Template must have either include_extensions or exclude_extensions, not both."
+            )
+        if self.include_extensions is None and self.exclude_extensions is None:
+            raise ValueError(
+                "Template must have either include_extensions or exclude_extensions."
+            )
+
+    @property
+    def type(self) -> str:
+        if self.include_extensions:
+            return "include"
+        return "exclude"
+
+    def does_include(self, file_extension: str) -> bool:
+        if self.include_extensions is not None:
+            return file_extension in self.include_extensions
+        return file_extension not in self.exclude_extensions
+
+
+# Example usage:
+default_template = Template(
+    include_extensions=[".py", ".md", ".txt", ".json", ".yaml", ".yml"]
+)
+
+

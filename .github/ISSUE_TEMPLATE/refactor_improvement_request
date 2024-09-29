@@ -6,8 +6,6 @@ labels: '["refactor", "improvement"]'
 assignees: ''
 
 ---
-### Refactoring / Improvement Request
-
 **Description**
 A clear and concise description of what needs to be refactored or improved.
 
@@ -29,7 +27,3 @@ If you have a solution or approach in mind, describe it here. This is optional b
 **Additional Context**
 Add any other context, screenshots, or details that could help with this request.
 
-### Checklist
-- [ ] Issue is well-defined and scoped.
-- [ ] No breaking changes expected.
-- [ ] Tests to cover the refactor/improvement are identified.

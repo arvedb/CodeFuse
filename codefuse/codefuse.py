@@ -6,11 +6,9 @@ directories, filtering files based on specified templates, and combining the
 content of the selected files into a single consolidated output.
 """
 
-import os
-from typing import List
-
-from .templates import default_template, Template
-from .files import File
+from templates import default_template, Template
+from app_data import AppData
+from output_data import Output
 
 
 class CodeFuse:
@@ -36,104 +34,44 @@ class CodeFuse:
             folder (str): Path to the directory to be processed.
             template (Template, optional): Template to determine file inclusion/exclusion.
                 Defaults to `default_template`.
-        
-        Raises:
-            ValueError: If the provided folder path does not exist or is not a directory.
         """
-        if not os.path.isdir(folder):
-            raise ValueError(f"The provided folder path '{folder}' is not a valid directory.")
+        self.app_data = AppData(folder=folder, template=template)
 
-        self.folder = folder
-        self.template = template
-        self.all_files = self._get_all_files()
-        self.included_files = [
-            file for file in self.all_files if self.template.does_include(file.extension)
-        ]
-        self.excluded_files = [
-            file for file in self.all_files if not self.template.does_include(file.extension)
-        ]
-
-    def _get_all_files(self) -> List[File]:
+    def _combine_files(self) -> str:
         """
-        Retrieve all files from the target directory and its subdirectories.
-
-        Traverses the directory tree starting from `self.folder` and collects all files.
-
-        Returns:
-            List[File]: A list of `File` instances representing each file found.
-        """
-        all_files = []
-        for root, _, files in os.walk(self.folder):
-            for filename in files:
-                file_path = os.path.join(root, filename)
-                all_files.append(File(file_path))
-        return all_files
-
-    def _combine_files(self, files: List[File]) -> str:
-        """
-        Combine the contents of the specified files into a single string.
-
-        Each file's content is separated by a line of dashes and includes the file path
-        for reference.
-
-        Args:
-            files (List[File]): List of `File` instances to be combined.
+        Combines the content of all included files into a single string,
+        along with a simple delimiter (e.g., 80 dashes).
 
         Returns:
             str: The combined content of all specified files.
-
-        Raises:
-            Exception: If there's an error reading any of the files.
         """
-        if not files:
+        included_files = self.app_data.included_files
+        if not included_files:
             return ""
 
         combined_content = []
-        separator = "-" * 80  # Separator line for clarity between files
-
-        for file in files:
-            try:
-                content = file.content
-                combined_content.append(f"{separator}\n\n{file.path}\n\n{content}")
-            except Exception as e:
-                raise Exception(f"Error combining file {file.path}: {e}")
-
+        for file_obj in included_files:
+            combined_content.append("-" * 80)         # Delimiter
+            combined_content.append(file_obj.path)    # Show file path
+            combined_content.append(file_obj.content) # The file's actual content
         return "\n\n".join(combined_content)
 
-    @property
-    def output(self) -> str:
+    def generate_output(self) -> Output:
         """
-        Get the combined output of all included files.
-
-        Combines the contents of `self.included_files` using the `_combine_files` method.
-
+        Creates and returns an Output object containing the merged file contents
+        and any additional metadata (e.g., how many files were merged).
+        
         Returns:
-            str: The consolidated content of all included files.
+            Output: The output object containing the merged content.
         """
-        return self._combine_files(self.included_files)
+        content = self._combine_files()
+        return Output(merged_content=content)
 
-    def write_output(self, path: str):
-        """
-        Write the combined output to a specified file.
+def main():
+    codefuse = CodeFuse(".")
+    output = codefuse.generate_output()
+    print(output.merged_content)
 
-        Excludes the output file itself from being included in future aggregations to prevent
-        recursive inclusion.
 
-        Args:
-            path (str): The file path where the combined output will be written.
-
-        Raises:
-            Exception: If there's an error writing to the specified file.
-        """
-        output_file = File(path)
-
-        # Exclude the output file from the list of all files to prevent self-inclusion
-        self.all_files = [
-            file for file in self.all_files if file.name != output_file.name
-        ]
-
-        try:
-            with open(path, "w", encoding="utf-8") as outfile:
-                outfile.write(self.output)
-        except Exception as e:
-            print(f"Error writing to {path}: {e}")
+if __name__ == "__main__":
+    main()

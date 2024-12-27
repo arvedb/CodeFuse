@@ -1,5 +1,5 @@
 import os
-from typing import Optional, List
+from typing import List
 from dataclasses import dataclass, field
 from templates import Template
 from files import File
@@ -11,13 +11,10 @@ class AppData:
     AppData holds and manages file information in a given folder based on a Template.
     - 'template' controls which extensions are included or excluded.
     - 'folder' is the root directory to scan.
-    - 'output' and 'output_file_path' can be used to store or reference output details.
     - 'all_files' is populated at instantiation time.
     """
     template: Template
     folder: str
-    output: Optional[str] = field(default=None)
-    output_file_path: Optional[str] = field(default=None)
     all_files: List[File] = field(init=False)
 
     def __post_init__(self):

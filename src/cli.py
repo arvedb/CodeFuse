@@ -67,14 +67,13 @@ def main():
 
     codefuse = CodeFuse(folder=args.folder, template=template)
     
+    output = codefuse.generate_output()
+    
     if args.clipboard:
-        import pyperclip
-        pyperclip.copy(codefuse.output)
-        print("Combined code has been copied to the clipboard.")
+        output.to_clipboard()
         
     if args.output:
-        codefuse.write_output(path=args.output)
-        print(f"Combined code has been written to {args.output}")
+        output.to_file(path=args.output)
 
 
 if __name__ == "__main__":

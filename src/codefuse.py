@@ -1,48 +1,50 @@
-import os
 
 from templates import default_template, Template
-from files import File
 from app_data import AppData
+from output_data import Output
 
 
 class CodeFuse:
-    def __init__(self, folder: str, template: Template = default_template, app_data: AppData = None):
-        self.app_data = app_data or AppData(
-            template=template,
-            folder=folder
-        )
-        self.app_data.output = self.output
+    """
+    CodeFuse orchestrates scanning files via AppData
+    and generating an Output object with the merged content.
+    """
+    def __init__(
+        self,
+        folder: str,
+        template: Template = default_template
+    ):
+        self.app_data = AppData(folder=folder, template=template)
 
-    def _combine_files(self, files: list[File]) -> str:
-        if not files:
+    def _combine_files(self) -> str:
+        """
+        Combines the content of all included files into a single string,
+        along with a simple delimiter (e.g., 80 dashes).
+        """
+        included_files = self.app_data.included_files
+        if not included_files:
             return ""
-        combined_content = []
-        for file in files:
-            try:
-                combined_content.append("-" * 80 + f"\n\n{file.path}\n\n{file.content}")
-            except Exception as e:
-                raise Exception(f"Error combining file {file.path}: {e}")
-        return "\n\n".join(combined_content)
-    
-    @property
-    def output(self) -> str:
-        return self._combine_files(self.app_data.included_files)
 
-    def write_output(self, path: str):
-        output_file = File(path)
-        self.app_data.all_files = [
-            file for file in self.app_data.all_files if file.name is not output_file.name
-        ]
-        try:
-            with open(path, "w", encoding="utf-8") as outfile:
-                outfile.write(self.output)
-        except Exception as e:
-            print(f"Error writing to {path}: {e}")
+        combined_content = []
+        for file_obj in included_files:
+            combined_content.append("-" * 80)         # Delimiter
+            combined_content.append(file_obj.path)    # Show file path
+            combined_content.append(file_obj.content) # The file's actual content
+        return "\n\n".join(combined_content)
+
+    def generate_output(self) -> Output:
+        """
+        Creates and returns an Output object containing the merged file contents
+        and any additional metadata (e.g., how many files were merged).
+        """
+        content = self._combine_files()
+        return Output(merged_content=content)
 
 
 def main():
     codefuse = CodeFuse(".")
-    print(codefuse.output)
+    output = codefuse.generate_output()
+    print(output.merged_content)
 
 
 if __name__ == "__main__":

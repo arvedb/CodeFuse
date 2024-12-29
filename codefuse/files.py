@@ -9,7 +9,9 @@ of file data.
 
 import os
 from dataclasses import dataclass
+import logging
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class File:
@@ -19,9 +21,6 @@ class File:
     Represents a single file and provides properties to access its extension, name,
     and content. This class is used by CodeFuse to manage and process files during
     the aggregation and merging process.
-
-    Attributes:
-        path (str): The absolute or relative path to the file.
     """
 
     path: str
@@ -72,10 +71,14 @@ class File:
             with open(self.path, "r", encoding="utf-8") as file:
                 return file.read()
         except FileNotFoundError:
-            raise FileNotFoundError(f"The file '{self.path}' was not found.")
+            logger.error(f"The file '{self.path}' was not found.")
+            raise
         except PermissionError:
-            raise PermissionError(f"Permission denied when accessing the file '{self.path}'.")
+            logger.error(f"Permission denied when accessing the file '{self.path}'.")
+            raise
         except UnicodeDecodeError:
-            raise UnicodeDecodeError(f"Cannot decode the file '{self.path}' using UTF-8 encoding.")
+            logger.error(f"Cannot decode the file '{self.path}' using UTF-8 encoding.")
+            raise
         except Exception as e:
-            raise Exception(f"An error occurred while reading the file '{self.path}': {e}")
+            logger.error(f"An error occurred while reading the file '{self.path}': {e}")
+            raise

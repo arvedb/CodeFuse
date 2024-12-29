@@ -8,9 +8,10 @@ configuring templates for file inclusion/exclusion, and executing the merging pr
 """
 
 import argparse
+import logging
 from codefuse import CodeFuse
 from templates import Template, default_template
-
+from logging_config import configure_logging  # Import the logging configuration
 
 def setup_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -60,27 +61,50 @@ def setup_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Copy the output to clipboard.",
     )
+    # Add log-level and log-file arguments
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Set the logging level (default: INFO).",
+    )
+    parser.add_argument(
+        "--log-file",
+        type=str,
+        default=None,
+        help="Optional path to a file to log messages.",
+    )
     return parser
-
 
 def main():
     """
     Entry point for the CodeFuse CLI.
 
-    This function parses command-line arguments, configures the merging template
-    based on the provided options, executes the merging process, and handles
-    output operations such as writing to a file or copying to the clipboard.
+    This function parses command-line arguments, configures logging,
+    sets up the merging template, executes the merging process,
+    and handles output operations such as writing to a file or copying to the clipboard.
     """
     # Set up and parse command-line arguments
     parser = setup_parser()
     args = parser.parse_args()
 
+    # Configure logging based on the provided log level and optional log file
+    configure_logging(log_level=args.log_level, log_to_file=args.log_file)
+
+    # Obtain a logger for the CLI
+    logger = logging.getLogger(__name__)
+    logger.debug(f"Arguments received: {args}")
+
     # Determine the template to use based on provided arguments
     if args.include:
+        logger.debug("Using include extensions for template.")
         template = Template(include_extensions=args.include)
     elif args.exclude:
+        logger.debug("Using exclude extensions for template.")
         template = Template(exclude_extensions=args.exclude)
     else:
+        logger.debug("Using default template.")
         template = default_template
 
     # Initialize the CodeFuse instance with the target folder and chosen template
@@ -97,8 +121,8 @@ def main():
 
     # If neither clipboard nor specific output is requested, print the combined output to the console
     if not args.clipboard and not args.output:
-        print(output.merged_content)
-
+        logger.info("Displaying merged content:")
+        logger.info(output.merged_content)
 
 if __name__ == "__main__":
     main()

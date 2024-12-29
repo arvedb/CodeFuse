@@ -3,7 +3,9 @@ from typing import List
 from dataclasses import dataclass, field
 from templates import Template
 from files import File
+import logging
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class AppData:
@@ -19,7 +21,9 @@ class AppData:
 
     def __post_init__(self):
         # Gather all files in the given folder
+        logger.debug(f"Scanning folder: {self.folder} with template: {self.template}")
         self.all_files = self._get_all_files()
+        logger.info(f"Found {len(self.all_files)} files in '{self.folder}'.")
 
     def _get_all_files(self) -> List[File]:
         """
@@ -30,6 +34,7 @@ class AppData:
             for filename in files:
                 path = os.path.join(root, filename)
                 all_files.append(File(path))
+                logger.debug(f"Discovered file: {path}")
         return all_files
 
     @property
@@ -37,12 +42,15 @@ class AppData:
         """
         Returns all files whose extension matches the template's criteria for inclusion.
         """
-        return [f for f in self.all_files if self.template.does_include(f.extension)]
+        included = [f for f in self.all_files if self.template.does_include(f.extension)]
+        logger.debug(f"Included {len(included)} files based on template.")
+        return included
 
     @property
     def excluded_files(self) -> List[File]:
         """
         Returns all files whose extension does NOT match the template's criteria for inclusion.
         """
-        return [f for f in self.all_files if not self.template.does_include(f.extension)]
-
+        excluded = [f for f in self.all_files if not self.template.does_include(f.extension)]
+        logger.debug(f"Excluded {len(excluded)} files based on template.")
+        return excluded
